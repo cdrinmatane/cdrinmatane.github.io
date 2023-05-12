@@ -2,6 +2,10 @@
 title: "Cosine Weight"
 date: 2022-08-25T09:48:54-04:00
 draft: true
+_build:
+  render: true
+  list: false
+author: default
 ---
 
 When doing ray tracing it's important to sample the hemisphere around the shading point with the correct distribution to avoid bias. 

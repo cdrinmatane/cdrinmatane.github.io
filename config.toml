@@ -1,5 +1,5 @@
-baseURL = "https://cdrinmatane.github.io/blog-hugo/"
-title = "CDRIN Research Blog"
+baseURL = "https://cdrinmatane.github.io/blog/"
+title = "Research Blog"
 
 theme = "anubis" 
 #paginate = 8

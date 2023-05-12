@@ -1,3 +1,5 @@
 <h1 class="site-title">
-    <a href="{{ .Site.BaseURL | relLangURL }}">{{ .Site.Title }}</a>
+    <a href="{{ .Site.BaseURL | relLangURL }}">
+        <img src="{{ "cdrin/cdrin_logo.png" | absURL }}" alt="Icon" style="height: 2em; vertical-align: middle;"> {{ .Site.Title }}
+    </a>
 </h1>
