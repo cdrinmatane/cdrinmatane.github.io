@@ -1,4 +1,4 @@
-baseURL = "https://example.com"
+baseURL = "https://cdrinmatane.github.io/blog-hugo/"
 title = "CDRIN Research Blog"
 
 theme = "anubis" 
@@ -31,9 +31,9 @@ utterancesTheme = "" # optional
 utterancesIssue = "" # optional
 utterancesLabel = "" # optional
 
-[[params.social]]
-id = "docs"
-url = "https://gohugo.io/documentation/"
+#[[params.social]]
+#id = "docs"
+#url = "https://gohugo.io/documentation/"
 
 [[params.social]]
 id = "github"
