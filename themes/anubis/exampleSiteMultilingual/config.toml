@@ -1,18 +1,19 @@
 baseURL = "https://example.com"
-title = "CDRIN Research Blog"
-
-theme = "anubis" 
-#paginate = 8
+languageCode = "en-us"
+defaultContentLanguage = "en"
+title = "Anubis"
+theme = "anubis"
+paginate = 3
 
 disqusShortname = ""
 googleAnalytics = ""
 
 [author]
-name = ""
+name = "Dmitry Kolosov"
 
 [params]
-author = "CDRIN"
-description = "CDRIN Research Blog."
+author = "Dmitry Kolosov"
+description = "Anubis is a simple minimalist theme for Hugo blog engine."
 dateFormat = "2006-01-02"
 paginationSinglePost = true
 style = "auto"
@@ -20,42 +21,60 @@ readMore = false
 readNextPosts = 2
 copyCodeButton = true
 rssAsSocialIcon = true
-mathjax = false
-
-# Graphcomment support
-graphcommentId = ""
 
 # utteranc.es support
 utterancesRepo = ""  # mandatory
 utterancesTheme = "" # optional
 utterancesIssue = "" # optional
 utterancesLabel = "" # optional
-
+  
 [[params.social]]
 id = "docs"
 url = "https://gohugo.io/documentation/"
 
 [[params.social]]
 id = "github"
-url = "https://github.com/cdrinmatane"
+url = "https://github.com/mitrichius/hugo-theme-anubis"
 
-[menu]
+[languages.en]
+languageName = "English"
 
 [[menu.main]]
 identifier = "about"
 name = "About"
-url = "https://www.cdrin.com/"
+url = "/about/"
 weight = 1
 
 [[menu.main]]
-identifier = "home"
-name = "Home"
-url = "/"
+identifier = "tags"
+name = "Tags"
+url = "/tags/"
 weight = 2
 
 [[menu.main]]
 name = "Archive"
 identifier = "archive"
+url = "/posts/"
+weight = 3
+
+[languages.pl]
+languageName = "Polski"
+
+[[languages.pl.menu.main]]
+identifier = "about"
+name = "O Hugo"
+url = "/about/"
+weight = 1
+
+[[languages.pl.menu.main]]
+identifier = "tags"
+name = "Tagi"
+url = "/tags/"
+weight = 2
+
+[[languages.pl.menu.main]]
+identifier = "archive"
+name = "Archiwum"
 url = "/posts/"
 weight = 3
 
