@@ -103,18 +103,27 @@ float3 ComputeGI(uint bf, uint bfSlice, float3 samplePos,
 
 We recently released the paper [Screen Space Indirect Lighting with Visibility Bitmask](https://arxiv.org/abs/2301.11376), a rendering technique based on GTAO that replaces the two horizon angles by a bit field representing the binary state (occluded / un-occluded) of N sectors uniformly distributed around the hemisphere slice. It allows light to pass behind surfaces of constant thickness while keeping the efficiency of horizon-based methods.
 
-We wanted to share some HLSL code to make it easier to implement in a 3D applications and clarify some details from the paper. Here we take the Unity GTAO code from HDRP as a starting point, to show that our method can be integrated in an existing implementation with only a few modifications.
+In this post, we share some code to make it easier to implement in 3D applications and clarify some details from the paper. We take the Unity GTAO code from HDRP as a starting point, to show that our method can be integrated into an existing implementation with only a few modifications.
 
-The GTAO algorithm starts by taking a fixed number (_dirCount_) of random directions per pixel (_dir_). Then a 2D circular slice is defined with the following parametrization:
+Like GTAO, the algorithm takes a number of samples in screen space in a number of random directions per pixel. Here is an AO render from the main camera, where each colored dot represents a sample for a single pixel for one given sampling direction:
+ 
+![image.png](/2122_47_CGM/.attachments/image-545ecba1-6553-4ee3-8ae6-14599c254583.png =400x)
 
-- _V_: The view direction (direction from current pixel to camera)
-- _normalVS_: The view-space normal at the current pixel
-- _sliceN_: Unit vector that is perpendicular to the slice plane
-- _projN_: The normal projected onto the slice plane (the normal is almost never aligned with the slice plane)
-- _T_: The slice tangent (perpendicular to _V_ and _sliceN_)
-- _N_: The angle in radians from _V_ to _projN_
+When samples are colored cyan, this means that they don't contribute to the lighting, either because they are outside the hemisphere, or because a previous sample has already occluded the sector where it could have contributed. Astute readers will notice that most samples don't contribute to the final image.
 
-```hlsl
+Here is a view of the scene from another angle, that shows how a 2D hemispherical slice is positioned in 3D space relative to the view direction and sampling direction:
+
+![image.png](/2122_47_CGM/.attachments/image-456ac465-4ab4-4ecd-92c3-afb87d9551b2.png =600x)
+
+Red sectors mean that the sample could only contribute occlusion (not lighting) to the pixel because it's normal was not facing the pixel's normal. When they are black or any other color, this is because they can contribute occlusion and lighting, and the sector's color is the same as the light's color. In this example it doesn't matter because we focus on ambient occlusion, so only occlusion is taken into account.
+
+The following figure shows how multiple slices are placed around the view vector. Slices are always aligned to the view vector _V_, and have a random orientation in screen space. This means that the projected normal is never the same from slice to slice. Notice that slices are not rotated around the pixel normal but around the view vector:
+
+![slice_anim2.gif](/2122_47_CGM/.attachments/slice_anim2-4eb64143-098a-4a56-855a-fefe82372f23.gif)
+
+This is the main loop of the original GTAO code from Unity:
+
+```csharp
 float integral = 0;
 float3 V = normalize(-positionVS);
 
@@ -146,15 +155,27 @@ for (int i = 0; i < dirCount; ++i)
 integral /= dirCount;
 ```
 
-For a given direction _i_, the _HorizonLoop()_ function finds the maximum elevation for the right part of the hemisphere (_maxHorizon.x_) and for the left part (_maxHorizon.y_).
+The code starts by looping over _dirCount_ sampling directions. For a given direction _i_, all the variables required for the slice parametrization are defined. Here is a breakdown of the most important variables:
+
+- <span style="color:magenta">_V_</span>: The view direction (direction from current pixel to camera)
+- <span style="color:grey">_normalVS_</span>: The view-space normal at the current pixel
+- <span style="color:red">_sliceN_</span>: Unit vector that is perpendicular to the slice plane
+- <span style="color:gold">_projN_</span>: The normal projected onto the slice plane (the normal is almost never aligned with the slice plane)
+- <span style="color:blue">_T_</span>: The slice tangent (perpendicular to _V_ and _sliceN_)
+- _N_: The angle in radians from _V_ to _projN_
+
+This is a 3D view of the slice, color-coded with the corresponding variable names above:
+
+<!--- ![image.png](/2122_47_CGM/.attachments/image-c5dcf745-f6e4-406b-b76a-0883eb4280f7.png) --->
+![image.png](/2122_47_CGM/.attachments/image-dd115e5d-eb8e-4cad-b914-c87609290086.png =500x)
+
+Back to the code, the _HorizonLoop()_ function finds the maximum elevation _maxHorizon.x_ for the right part of the hemisphere and _maxHorizon.y_ for the left part.
 
 With those maximum elevations, the algorithm then clamps the horizons to the hemisphere centered on the projected normal, and then computes the integral of the un-occluded regions on each side of the view vector using the _IntegrateArcCosWeighted()_ function.
 
-To use the visibility bitmask approach, we slightly modify the _HorizonLoop()_ function to pass an _inout uint globalOccludedBitfield_ that will be marked with occluded sectors.
+To use the visibility bitmask approach, we slightly modify the _HorizonLoop()_ function to pass an _inout uint globalOccludedBitfield_ that will be marked with occluded sectors:
 
-We can then compute the integral by counting the number of occluded sectors and dividing by the total amount of sectors. Note that we do not take the cosine weight into account in this case. 
-
-```hlsl
+```csharp
 // Find horizons
 float2 maxHorizons;
 uint globalOccludedBitfield = 0;
@@ -168,14 +189,12 @@ maxHorizons.y = HorizonLoop(positionVS, V, rayStart, negDir, offset, step, 0, gl
     ...
 #endif
 ```
+We can then compute the integral by counting the number of occluded sectors and dividing by the total amount of sectors. Note that we do not take the cosine weight into account in this case. 
 
-Most of the work happens in the HorizonLoop() function. The GTAO implementation take a fixed number of samples (__AOStepCount_) along the current direction (_rayDir_).
+Most of the work happens in the HorizonLoop() function. Here is the original one from GTAO: 
 
-For each sample found, the view space position is reconstructed (_samplePosVS_), and the direction from the current pixel to the current sample is computed (_deltaPos_). This is used to compute the elevation (_currHorizon_). The _UpdateHorizon()_ function is used to apply a falloff over the distance and keep the highest found elevation. 
-
-```hlsl
-float HorizonLoop(float3 positionVS, float3 V, float2 rayStart, float2 rayDir, 
-    float rayOffset, float rayStep, int mipModifier)
+```csharp
+float HorizonLoop(float3 positionVS, float3 V, float2 rayStart, float2 rayDir, float rayOffset, float rayStep, int mipModifier)
 {
     float maxHorizon = -1.0f;  // cos(pi)
     float t = rayOffset * rayStep + rayStep;
@@ -201,12 +220,12 @@ float HorizonLoop(float3 positionVS, float3 V, float2 rayStart, float2 rayDir,
     return maxHorizon;
 }
 ```
+The code takes __AOStepCount_ number of samples along the current direction _rayDir_. For each sample found, the view space position _samplePosVS_ is reconstructed, and the direction from the current pixel to the current sample _deltaPos_ is computed. This is used to keep track of the elevation _currHorizon_. The _UpdateHorizon()_ function is used to apply a falloff over the distance and keep the highest found elevation. 
 
-With visibility bitmasks things are a bit different; We need to compute not only the front-face sample (_deltaPos_) but a back-face one too (_deltaPosBackface_) that is determined by the constant thickness value used (__Thickness_). 
 
-The horizon angles for front and back are computed, shifted from viewDir to normal  and clamped in [0, 1] where 0 is the left side of the hemisphere, and 1 the right side. Then the _UpdatePartitions()_ function is used to set the bits that lay between the font and back angles in _globalOccludedBitfield_.
+With visibility bitmasks things are a bit different:
 
-```hlsl
+```csharp
 ...
 
 float3 deltaPos = samplePosVS - positionVS;
@@ -225,7 +244,7 @@ float3 deltaPos = samplePosVS - positionVS;
     // Sampling direction inverts min/max angles
     frontBackHorizon = samplingDirection >= 0 ? frontBackHorizon.yx : frontBackHorizon.xy;
 
-    globalOccludedBitfield = UpdatePartitions(frontBackHorizon.x, frontBackHorizon.y, globalOccludedBitfield);
+    globalOccludedBitfield = UpdateSectors(frontBackHorizon.x, frontBackHorizon.y, globalOccludedBitfield);
 #else
     float deltaLenSq = dot(deltaPos, deltaPos);
     float currHorizon = dot(deltaPos, V) * rsqrt(deltaLenSq);
@@ -233,14 +252,20 @@ float3 deltaPos = samplePosVS - positionVS;
 #endif
 ```
 
+We need to compute not only the front-face sample _deltaPos_ but a back-face one _deltaPosBackface_ too, which is determined by the constant thickness value __Thickness_. The horizon angles for front and back are computed, shifted from viewDir to normal and clamped in [0, 1] where 0 is the left side of the hemisphere, and 1 is the right side. Then the _UpdateSectors()_ function is used to set the bits that lay between the font and back angles in _globalOccludedBitfield_.
+
+The following figure shows that the red sample front-face (leftmost dotted red line) is shifted according to the thickness vector _t_ to create a backface (rightmost dotted red line):
+
+![image.png](/2122_47_CGM/.attachments/image-5479ab08-b919-4ef0-bdff-e663b809c871.png)
+
 With visibility bitmasks the _UpdateHorizon()_ function from GTAO is not needed anymore, because we don't need to apply any falloff! The constant thickness and the bitmask is enough to reproduce the attenuation over the distance in a plausible manner. It's similar to ray tracing AO that doesn't need any falloff heuristic either.
 
-The _UpdateParitions()_ function takes as input minHorizon and maxHorizon that represent the position in the hemisphere with a value between 0 and 1. 
+The _UpdateSectors()_ function takes as input minHorizon and maxHorizon which represents the position of a sample in the hemisphere with a value between 0 and 1. 
 
-```hlsl
+```csharp
 #define SECTOR_COUNT 32
 
-uint UpdatePartitions(float minHorizon, float maxHorizon, uint globalOccludedBitfield)
+uint UpdateSectors(float minHorizon, float maxHorizon, uint globalOccludedBitfield)
 {
     uint startHorizonInt = minHorizon * SECTOR_COUNT;
     uint angleHorizonInt = ceil((maxHorizon-minHorizon) * SECTOR_COUNT);
@@ -252,10 +277,14 @@ uint UpdatePartitions(float minHorizon, float maxHorizon, uint globalOccludedBit
 
 Sectors get activated from minHorizon to maxHorizon depending on the chosen rounding function:
 
-- ceil: Sample needs to at least touch a sector to activate it
-- round: Sample needs to cover at least half a sector to activate it
-- floor: Sample needs to cover the entire sector to activate it 
+- _ceil_: Sample needs to at least touch a sector to activate it
+- _round_: Sample needs to cover at least half a sector to activate it
+- _floor_: Sample needs to cover the entire sector to activate it 
 
-That's it! That pretty much covers the essential parts related to ambient occlusion using visibility bimasks. We left out the GI and the ambient sampling parts, maybe for a later post!
+<!--- ![image.png](/2122_47_CGM/.attachments/image-74dae929-d9bd-489c-a96d-21edd96df31c.png) --->
+
+That pretty much covers the essential parts related to ambient occlusion using visibility bitmasks. It's pretty simple to add into a horizon-based technique like GTAO, and it should make the occlusion better especially around thin surfaces with no noticeable impact on performance.
+
+<!--- We left out the GI and the ambient sampling parts, maybe for a later post! --->
 
 
