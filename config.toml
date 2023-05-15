@@ -3,6 +3,7 @@ title = "Research Blog"
 
 theme = "anubis" 
 #paginate = 8
+relativeURLs = true
 
 disqusShortname = ""
 googleAnalytics = ""
