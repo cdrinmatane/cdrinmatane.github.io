@@ -1,10 +1,10 @@
 ---
 title: "SSAO using Visibility Bitmasks"
 date: 2023-05-11T09:48:54-04:00
-draft: false
+draft: true
 _build:
   render: true
-  list: true
+  list: false
 author: therrieno 
 ---
 
