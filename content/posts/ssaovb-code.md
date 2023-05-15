@@ -107,13 +107,13 @@ In this post, we share some code to make it easier to implement in 3D applicatio
 
 Like GTAO, the algorithm takes a number of samples in screen space in a number of random directions per pixel. Here is an AO render from the main camera, where each colored dot represents a sample for a single pixel for one given sampling direction:
  
-![image.png](/2122_47_CGM/.attachments/image-545ecba1-6553-4ee3-8ae6-14599c254583.png)
+![image.png](/2122_47_CGM/.attachments/image-545ecba1-6553-4ee3-8ae6-14599c254583.png=400x)
 
 When samples are colored cyan, this means that they don't contribute to the lighting, either because they are outside the hemisphere, or because a previous sample has already occluded the sector where it could have contributed. Astute readers will notice that most samples don't contribute to the final image.
 
 Here is a view of the scene from another angle, that shows how a 2D hemispherical slice is positioned in 3D space relative to the view direction and sampling direction:
 
-![image.png](/2122_47_CGM/.attachments/image-456ac465-4ab4-4ecd-92c3-afb87d9551b2.png)
+![image.png](/2122_47_CGM/.attachments/image-456ac465-4ab4-4ecd-92c3-afb87d9551b2.png=600x)
 
 Red sectors mean that the sample could only contribute occlusion (not lighting) to the pixel because it's normal was not facing the pixel's normal. When they are black or any other color, this is because they can contribute occlusion and lighting, and the sector's color is the same as the light's color. In this example it doesn't matter because we focus on ambient occlusion, so only occlusion is taken into account.
 
@@ -167,7 +167,7 @@ The code starts by looping over _dirCount_ sampling directions. For a given dire
 This is a 3D view of the slice, color-coded with the corresponding variable names above:
 
 <!--- ![image.png](/2122_47_CGM/.attachments/image-c5dcf745-f6e4-406b-b76a-0883eb4280f7.png) --->
-![image.png](/2122_47_CGM/.attachments/image-dd115e5d-eb8e-4cad-b914-c87609290086.png)
+![image.png](/2122_47_CGM/.attachments/image-dd115e5d-eb8e-4cad-b914-c87609290086.png=500x)
 
 Back to the code, the _HorizonLoop()_ function finds the maximum elevation _maxHorizon.x_ for the right part of the hemisphere and _maxHorizon.y_ for the left part.
 
