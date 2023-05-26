@@ -4,7 +4,7 @@ date: 2023-05-11T09:48:54-04:00
 draft: true
 _build:
   render: true
-  list: false
+  list: true
 author: therrieno 
 ---
 
@@ -108,20 +108,20 @@ In this post, we share some code to make it easier to implement in 3D applicatio
 Like GTAO, the algorithm takes a number of samples in screen space in a number of random directions per pixel. Here is an AO render from the main camera, where each colored dot represents a sample for a single pixel for one given sampling direction:
  
 <!--- ![image.png](/2122_47_CGM/.attachments/image-545ecba1-6553-4ee3-8ae6-14599c254583.png) --->
-<img src="/2122_47_CGM/.attachments/image-545ecba1-6553-4ee3-8ae6-14599c254583.png" width="400">
+<img src="../../2122_47_CGM/.attachments/image-545ecba1-6553-4ee3-8ae6-14599c254583.png" width="400">
 
 When samples are colored cyan, this means that they don't contribute to the lighting, either because they are outside the hemisphere, or because a previous sample has already occluded the sector where it could have contributed. Astute readers will notice that most samples don't contribute to the final image.
 
 Here is a view of the scene from another angle, that shows how a 2D hemispherical slice is positioned in 3D space relative to the view direction and sampling direction:
 
 <!--- ![image.png](/2122_47_CGM/.attachments/image-456ac465-4ab4-4ecd-92c3-afb87d9551b2.png) --->
-<img src="/2122_47_CGM/.attachments/image-456ac465-4ab4-4ecd-92c3-afb87d9551b2.png" width="600">
+<img src="../../2122_47_CGM/.attachments/image-456ac465-4ab4-4ecd-92c3-afb87d9551b2.png" width="600">
 
 Red sectors mean that the sample could only contribute occlusion (not lighting) to the pixel because it's normal was not facing the pixel's normal. When they are black or any other color, this is because they can contribute occlusion and lighting, and the sector's color is the same as the light's color. In this example it doesn't matter because we focus on ambient occlusion, so only occlusion is taken into account.
 
 The following figure shows how multiple slices are placed around the view vector. Slices are always aligned to the view vector _V_, and have a random orientation in screen space. This means that the projected normal is never the same from slice to slice. Notice that slices are not rotated around the pixel normal but around the view vector:
 
-![slice_anim2.gif](/2122_47_CGM/.attachments/slice_anim2-4eb64143-098a-4a56-855a-fefe82372f23.gif)
+![slice_anim2.gif](../../2122_47_CGM/.attachments/slice_anim2-4eb64143-098a-4a56-855a-fefe82372f23.gif)
 
 This is the main loop of the original GTAO code from Unity:
 
@@ -172,7 +172,7 @@ This is a 3D view of the slice, color-coded with the corresponding variable name
 
 
 <!--- ![image.png](/2122_47_CGM/.attachments/image-dd115e5d-eb8e-4cad-b914-c87609290086.png) --->
-<img src="/2122_47_CGM/.attachments/image-dd115e5d-eb8e-4cad-b914-c87609290086.png" width="500">
+<img src="../../2122_47_CGM/.attachments/image-dd115e5d-eb8e-4cad-b914-c87609290086.png" width="500">
 
 Back to the code, the _HorizonLoop()_ function finds the maximum elevation _maxHorizon.x_ for the right part of the hemisphere and _maxHorizon.y_ for the left part.
 
@@ -261,7 +261,7 @@ We need to compute not only the front-face sample _deltaPos_ but a back-face one
 
 The following figure shows that the red sample front-face (leftmost dotted red line) is shifted according to the thickness vector _t_ to create a backface (rightmost dotted red line):
 
-![image.png](/2122_47_CGM/.attachments/image-5479ab08-b919-4ef0-bdff-e663b809c871.png)
+![image.png](../../2122_47_CGM/.attachments/image-5479ab08-b919-4ef0-bdff-e663b809c871.png)
 
 With visibility bitmasks the _UpdateHorizon()_ function from GTAO is not needed anymore, because we don't need to apply any falloff! The constant thickness and the bitmask is enough to reproduce the attenuation over the distance in a plausible manner. It's similar to ray tracing AO that doesn't need any falloff heuristic either.
 
